@@ -17,6 +17,7 @@ export interface ChainTransfers {
   shortLabel: string;
   transfers: Transfer[];
   error?: string;
+  pagination?: { page: number; per_page: number; is_last_page: boolean };
 }
 
 export interface DailyVolumeRow {

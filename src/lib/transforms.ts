@@ -1,6 +1,41 @@
 import { format } from 'date-fns';
 import type { ChainTransfers, DailyVolumeRow } from './types';
 
+export function isCexLabel(label: string | null | undefined): boolean {
+  return typeof label === 'string' && label.includes('🏦');
+}
+
+export interface DailyFlowRow {
+  date: string;
+  inflow: number;
+  outflow: number;
+}
+
+export function buildDailyFlows(data: ChainTransfers[]): DailyFlowRow[] {
+  const dayMap: Record<string, { inflow: number; outflow: number }> = {};
+
+  for (const { transfers } of data) {
+    for (const tx of transfers) {
+      const fromCex = isCexLabel(tx.from_address_label);
+      const toCex = isCexLabel(tx.to_address_label);
+
+      // Exchange-to-exchange: neutral, skip
+      if (fromCex && toCex) continue;
+
+      const day = format(new Date(tx.block_timestamp), 'yyyy-MM-dd');
+      if (!dayMap[day]) dayMap[day] = { inflow: 0, outflow: 0 };
+
+      const usd = tx.transfer_value_usd || 0;
+      if (toCex) dayMap[day].inflow += usd;
+      else if (fromCex) dayMap[day].outflow += usd;
+    }
+  }
+
+  return Object.entries(dayMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, { inflow, outflow }]) => ({ date, inflow, outflow }));
+}
+
 export function buildDailyVolume(data: ChainTransfers[]): DailyVolumeRow[] {
   const dayMap: Record<string, DailyVolumeRow> = {};
 

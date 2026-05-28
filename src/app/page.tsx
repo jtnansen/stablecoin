@@ -2,11 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { UsdcFlowsChart } from '@/components/UsdcFlowsChart';
+import { FlowsChart } from '@/components/FlowsChart';
 import { StatCard } from '@/components/StatCard';
 import { DateRangePicker } from '@/components/DateRangePicker';
-import { buildDailyVolume, grandTotal, totalByChain, totalTransferCount, formatUsd } from '@/lib/transforms';
+import { buildDailyVolume, buildDailyFlows, grandTotal, totalByChain, totalTransferCount, formatUsd } from '@/lib/transforms';
 import { USDC_CHAINS } from '@/lib/chains';
 import type { ChainTransfers, DailyVolumeRow } from '@/lib/types';
+import type { DailyFlowRow } from '@/lib/transforms';
 
 function daysAgo(n: number): string {
   const d = new Date();
@@ -21,11 +23,12 @@ function today(): string {
 type Status = 'idle' | 'loading' | 'error' | 'done';
 
 export default function Dashboard() {
-  const [from, setFrom] = useState(() => daysAgo(30));
+  const [from, setFrom] = useState(() => daysAgo(7));
   const [to, setTo] = useState(today);
   const [status, setStatus] = useState<Status>('idle');
   const [chainData, setChainData] = useState<ChainTransfers[]>([]);
   const [dailyVolume, setDailyVolume] = useState<DailyVolumeRow[]>([]);
+  const [dailyFlows, setDailyFlows] = useState<DailyFlowRow[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
 
   const fetchData = useCallback(async (fromDate: string, toDate: string) => {
@@ -40,6 +43,7 @@ export default function Dashboard() {
       const data: ChainTransfers[] = await res.json();
       setChainData(data);
       setDailyVolume(buildDailyVolume(data));
+      setDailyFlows(buildDailyFlows(data));
       setStatus('done');
     } catch (err: any) {
       setErrorMsg(err.message ?? 'Unknown error');
@@ -137,6 +141,30 @@ export default function Dashboard() {
           )}
         </section>
 
+        {/* Inflow / Outflow chart */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-sm font-semibold text-white">USDC CEX Inflow vs Outflow</h2>
+              <p className="text-zinc-500 text-xs mt-0.5">
+                <span className="text-emerald-500">Inflow</span> = wallet → exchange &nbsp;·&nbsp;
+                <span className="text-red-500">Outflow</span> = exchange → wallet &nbsp;·&nbsp;
+                exchange↔exchange excluded
+              </p>
+            </div>
+          </div>
+          {isLoading ? (
+            <div className="h-[380px] flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <div className="w-8 h-8 border-2 border-zinc-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
+                <p className="text-zinc-500 text-sm">Loading flow data…</p>
+              </div>
+            </div>
+          ) : (
+            <FlowsChart data={dailyFlows} />
+          )}
+        </section>
+
         {/* Per-chain breakdown table */}
         {status === 'done' && chainData.length > 0 && (
           <section className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
@@ -157,7 +185,7 @@ export default function Dashboard() {
                 {chainData
                   .slice()
                   .sort((a, b) => (totals[b.chain] ?? 0) - (totals[a.chain] ?? 0))
-                  .map(({ chain, label, color, transfers }) => {
+                  .map(({ chain, label, color, transfers, error }) => {
                     const vol = totals[chain] ?? 0;
                     const pct = total > 0 ? (vol / total) * 100 : 0;
                     const avg = transfers.length > 0 ? vol / transfers.length : 0;
@@ -167,6 +195,14 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2">
                             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
                             <span className="text-white">{label}</span>
+                            {error && (
+                              <span
+                                className="text-xs text-red-400 bg-red-950 border border-red-800 rounded px-1.5 py-0.5 font-mono truncate max-w-[260px]"
+                                title={error}
+                              >
+                                {error.slice(0, 60)}
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-3 text-right text-zinc-300 font-mono">

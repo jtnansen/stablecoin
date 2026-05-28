@@ -16,38 +16,49 @@ async function fetchChainTransfers(
   apiKey: string
 ): Promise<ChainTransfers> {
   try {
-    const res = await fetch(NANSEN_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apiKey,
-      },
-      body: JSON.stringify({
-        chain,
-        token_address: address,
-        date: { from, to },
-        pagination: { page: 1, per_page: 1000 },
-        filters: {
-          include_cex: true,
-          include_dex: false,
-          non_exchange_transfers: false,
-        },
-      }),
-      // Revalidate every 5 minutes
-      next: { revalidate: 300 },
-    });
+    const allTransfers = [];
+    let page = 1;
+    let isLastPage = false;
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`[usdc-flows] ${chain} error ${res.status}:`, text);
-      return { chain, label, color, shortLabel, transfers: [], error: `HTTP ${res.status}` };
+    while (!isLastPage) {
+      const res = await fetch(NANSEN_API_URL, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          apiKey,
+        },
+        body: JSON.stringify({
+          chain,
+          token_address: address,
+          date: { from, to },
+          pagination: { page, per_page: 1000 },
+          filters: {
+            include_cex: true,
+            include_dex: false,
+            non_exchange_transfers: false,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        const detail = `HTTP ${res.status}: ${text.slice(0, 200)}`;
+        console.error(`[usdc-flows] ${chain} error:`, detail);
+        return { chain, label, color, shortLabel, transfers: allTransfers, error: detail };
+      }
+
+      const json = await res.json();
+      allTransfers.push(...(json.data ?? []));
+      isLastPage = json.pagination?.is_last_page ?? true;
+      page += 1;
     }
 
-    const json = await res.json();
-    return { chain, label, color, shortLabel, transfers: json.data ?? [] };
+    return { chain, label, color, shortLabel, transfers: allTransfers };
   } catch (err) {
-    console.error(`[usdc-flows] ${chain} fetch failed:`, err);
-    return { chain, label, color, shortLabel, transfers: [], error: String(err) };
+    const detail = String(err);
+    console.error(`[usdc-flows] ${chain} fetch failed:`, detail);
+    return { chain, label, color, shortLabel, transfers: [], error: detail };
   }
 }
 

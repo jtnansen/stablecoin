@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.nansen.ai)",
+      "Bash(curl -s -X POST https://api.nansen.ai/api/v1/tgm/transfers -H 'Content-Type: application/json' -H 'apiKey: nsn_aeb27d83a12f69bd79ec7513960f2616' -d '{ *)"
+    ]
+  }
+}
