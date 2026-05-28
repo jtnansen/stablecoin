@@ -1,64 +1,203 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useState, useCallback } from 'react';
+import { UsdcFlowsChart } from '@/components/UsdcFlowsChart';
+import { StatCard } from '@/components/StatCard';
+import { DateRangePicker } from '@/components/DateRangePicker';
+import { buildDailyVolume, grandTotal, totalByChain, totalTransferCount, formatUsd } from '@/lib/transforms';
+import { USDC_CHAINS } from '@/lib/chains';
+import type { ChainTransfers, DailyVolumeRow } from '@/lib/types';
+
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split('T')[0];
+}
+
+function today(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+type Status = 'idle' | 'loading' | 'error' | 'done';
+
+export default function Dashboard() {
+  const [from, setFrom] = useState(() => daysAgo(30));
+  const [to, setTo] = useState(today);
+  const [status, setStatus] = useState<Status>('idle');
+  const [chainData, setChainData] = useState<ChainTransfers[]>([]);
+  const [dailyVolume, setDailyVolume] = useState<DailyVolumeRow[]>([]);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const fetchData = useCallback(async (fromDate: string, toDate: string) => {
+    setStatus('loading');
+    setErrorMsg('');
+    try {
+      const res = await fetch(`/api/usdc-flows?from=${fromDate}&to=${toDate}`);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+      const data: ChainTransfers[] = await res.json();
+      setChainData(data);
+      setDailyVolume(buildDailyVolume(data));
+      setStatus('done');
+    } catch (err: any) {
+      setErrorMsg(err.message ?? 'Unknown error');
+      setStatus('error');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData(from, to);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleDateChange(newFrom: string, newTo: string) {
+    setFrom(newFrom);
+    setTo(newTo);
+    fetchData(newFrom, newTo);
+  }
+
+  const isLoading = status === 'loading';
+  const totals = totalByChain(chainData);
+  const total = grandTotal(chainData);
+  const txCount = totalTransferCount(chainData);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-zinc-950 text-white">
+      {/* Header */}
+      <header className="border-b border-zinc-800 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight">Stablecoin Dashboard</h1>
+            <p className="text-zinc-500 text-xs mt-0.5">USDC · CEX flows · all chains</p>
+          </div>
+          <DateRangePicker from={from} to={to} onChange={handleDateChange} disabled={isLoading} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Error banner */}
+        {status === 'error' && (
+          <div className="bg-red-950 border border-red-800 rounded-lg px-4 py-3 text-red-300 text-sm">
+            Failed to load data: {errorMsg}
+          </div>
+        )}
+
+        {/* Summary stat cards */}
+        <section>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="col-span-2 sm:col-span-1 lg:col-span-1">
+              <StatCard
+                label="Total CEX Volume"
+                value={isLoading ? '—' : formatUsd(total)}
+                sub={isLoading ? 'loading…' : `${txCount.toLocaleString()} transfers`}
+              />
+            </div>
+            {USDC_CHAINS.slice(0, 8).map(({ chain, label, color, shortLabel }) => (
+              <StatCard
+                key={chain}
+                label={shortLabel}
+                value={isLoading ? '—' : formatUsd(totals[chain] ?? 0)}
+                sub={
+                  isLoading
+                    ? ''
+                    : `${chainData.find((c) => c.chain === chain)?.transfers.length ?? 0} txs`
+                }
+                color={color}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Main chart */}
+        <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-sm font-semibold text-white">USDC CEX Flows by Chain</h2>
+              <p className="text-zinc-500 text-xs mt-0.5">Daily transfer volume (USD) · CEX only</p>
+            </div>
+            {isLoading && (
+              <div className="flex items-center gap-2 text-zinc-400 text-xs">
+                <span className="w-3 h-3 border-2 border-zinc-600 border-t-blue-500 rounded-full animate-spin" />
+                Fetching {USDC_CHAINS.length} chains…
+              </div>
+            )}
+          </div>
+
+          {isLoading ? (
+            <div className="h-[380px] flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <div className="w-8 h-8 border-2 border-zinc-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
+                <p className="text-zinc-500 text-sm">Loading transfer data…</p>
+              </div>
+            </div>
+          ) : (
+            <UsdcFlowsChart data={dailyVolume} chains={chainData} />
+          )}
+        </section>
+
+        {/* Per-chain breakdown table */}
+        {status === 'done' && chainData.length > 0 && (
+          <section className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-zinc-800">
+              <h2 className="text-sm font-semibold">Chain Breakdown</h2>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-zinc-500 text-xs uppercase tracking-wide border-b border-zinc-800">
+                  <th className="text-left px-6 py-3">Chain</th>
+                  <th className="text-right px-6 py-3">Transfers</th>
+                  <th className="text-right px-6 py-3">Volume (USD)</th>
+                  <th className="text-right px-6 py-3">Avg Size</th>
+                  <th className="text-right px-6 py-3">% of Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chainData
+                  .slice()
+                  .sort((a, b) => (totals[b.chain] ?? 0) - (totals[a.chain] ?? 0))
+                  .map(({ chain, label, color, transfers }) => {
+                    const vol = totals[chain] ?? 0;
+                    const pct = total > 0 ? (vol / total) * 100 : 0;
+                    const avg = transfers.length > 0 ? vol / transfers.length : 0;
+                    return (
+                      <tr key={chain} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                            <span className="text-white">{label}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3 text-right text-zinc-300 font-mono">
+                          {transfers.length.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-3 text-right text-white font-mono font-medium">
+                          {formatUsd(vol)}
+                        </td>
+                        <td className="px-6 py-3 text-right text-zinc-400 font-mono">
+                          {formatUsd(avg)}
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-20 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${pct}%`, background: color }}
+                              />
+                            </div>
+                            <span className="text-zinc-400 font-mono text-xs w-10 text-right">
+                              {pct.toFixed(1)}%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </section>
+        )}
       </main>
     </div>
   );
