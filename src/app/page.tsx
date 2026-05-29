@@ -1,172 +1,113 @@
-'use client';
-
-import { useEffect, useState, useCallback } from 'react';
+import type { StaticData, DailyVolumeRow } from '@/lib/types';
+import type { DailyFlowRow } from '@/lib/transforms';
+import { StatCard } from '@/components/StatCard';
 import { UsdcFlowsChart } from '@/components/UsdcFlowsChart';
 import { FlowsChart } from '@/components/FlowsChart';
-import { StatCard } from '@/components/StatCard';
-import { DateRangePicker } from '@/components/DateRangePicker';
-import { buildDailyVolume, buildDailyFlows, grandTotal, totalByChain, totalTransferCount, formatUsd } from '@/lib/transforms';
-import { USDC_CHAINS } from '@/lib/chains';
-import type { ChainTransfers, DailyVolumeRow } from '@/lib/types';
-import type { DailyFlowRow } from '@/lib/transforms';
+import { formatUsd } from '@/lib/transforms';
+import rawData from '@/data/usdc-flows.json';
 
-function daysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().split('T')[0];
-}
+const data = rawData as StaticData;
 
-function today(): string {
-  return new Date().toISOString().split('T')[0];
-}
-
-type Status = 'idle' | 'loading' | 'error' | 'done';
-
-export default function Dashboard() {
-  const [from, setFrom] = useState(() => daysAgo(7));
-  const [to, setTo] = useState(today);
-  const [status, setStatus] = useState<Status>('idle');
-  const [chainData, setChainData] = useState<ChainTransfers[]>([]);
-  const [dailyVolume, setDailyVolume] = useState<DailyVolumeRow[]>([]);
-  const [dailyFlows, setDailyFlows] = useState<DailyFlowRow[]>([]);
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const fetchData = useCallback(async (fromDate: string, toDate: string) => {
-    setStatus('loading');
-    setErrorMsg('');
-    try {
-      const res = await fetch(`/api/usdc-flows?from=${fromDate}&to=${toDate}`);
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.error || `HTTP ${res.status}`);
-      }
-      const data: ChainTransfers[] = await res.json();
-      setChainData(data);
-      setDailyVolume(buildDailyVolume(data));
-      setDailyFlows(buildDailyFlows(data));
-      setStatus('done');
-    } catch (err: any) {
-      setErrorMsg(err.message ?? 'Unknown error');
-      setStatus('error');
+function buildDailyVolume(chains: StaticData['chains']): DailyVolumeRow[] {
+  const map: Record<string, DailyVolumeRow> = {};
+  for (const c of chains) {
+    for (const d of c.days) {
+      if (!map[d.date]) map[d.date] = { date: d.date };
+      map[d.date][c.chain] = d.volume;
     }
-  }, []);
-
-  useEffect(() => {
-    fetchData(from, to);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function handleDateChange(newFrom: string, newTo: string) {
-    setFrom(newFrom);
-    setTo(newTo);
-    fetchData(newFrom, newTo);
   }
+  return Object.values(map).sort((a, b) => (a.date as string).localeCompare(b.date as string));
+}
 
-  const isLoading = status === 'loading';
-  const totals = totalByChain(chainData);
-  const total = grandTotal(chainData);
-  const txCount = totalTransferCount(chainData);
+function buildDailyFlows(chains: StaticData['chains']): DailyFlowRow[] {
+  const map: Record<string, { inflow: number; outflow: number }> = {};
+  for (const c of chains) {
+    for (const d of c.days) {
+      if (!map[d.date]) map[d.date] = { inflow: 0, outflow: 0 };
+      map[d.date].inflow += d.inflow;
+      map[d.date].outflow += d.outflow;
+    }
+  }
+  return Object.entries(map)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, { inflow, outflow }]) => ({ date, inflow, outflow }));
+}
+
+export default function Page() {
+  const { chains, from, to, fetchedAt } = data;
+
+  const dailyVolume = buildDailyVolume(chains);
+  const dailyFlows = buildDailyFlows(chains);
+
+  const total = chains.reduce((s, c) => s + c.totalVolume, 0);
+  const txCount = chains.reduce((s, c) => s + c.totalCount, 0);
+
+  const updatedLabel = fetchedAt
+    ? new Date(fetchedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Header */}
       <header className="border-b border-zinc-800 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-lg font-semibold tracking-tight">Stablecoin Dashboard</h1>
             <p className="text-zinc-500 text-xs mt-0.5">USDC · CEX flows · all chains</p>
           </div>
-          <DateRangePicker from={from} to={to} onChange={handleDateChange} disabled={isLoading} />
+          {from && to && (
+            <div className="text-right">
+              <p className="text-zinc-400 text-xs font-mono">{from} → {to}</p>
+              {updatedLabel && (
+                <p className="text-zinc-600 text-xs mt-0.5">Updated {updatedLabel}</p>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* Error banner */}
-        {status === 'error' && (
-          <div className="bg-red-950 border border-red-800 rounded-lg px-4 py-3 text-red-300 text-sm">
-            Failed to load data: {errorMsg}
-          </div>
-        )}
-
-        {/* Summary stat cards */}
         <section>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             <div className="col-span-2 sm:col-span-1 lg:col-span-1">
               <StatCard
                 label="Total CEX Volume"
-                value={isLoading ? '—' : formatUsd(total)}
-                sub={isLoading ? 'loading…' : `${txCount.toLocaleString()} transfers`}
+                value={total > 0 ? formatUsd(total) : '—'}
+                sub={total > 0 ? `${txCount.toLocaleString()} transfers` : 'Run fetch-data script'}
               />
             </div>
-            {USDC_CHAINS.slice(0, 8).map(({ chain, label, color, shortLabel }) => (
+            {chains.map(({ chain, label, color, shortLabel, totalVolume, totalCount }) => (
               <StatCard
                 key={chain}
                 label={shortLabel}
-                value={isLoading ? '—' : formatUsd(totals[chain] ?? 0)}
-                sub={
-                  isLoading
-                    ? ''
-                    : `${chainData.find((c) => c.chain === chain)?.transfers.length ?? 0} txs`
-                }
+                value={formatUsd(totalVolume)}
+                sub={`${totalCount.toLocaleString()} txs`}
                 color={color}
               />
             ))}
           </div>
         </section>
 
-        {/* Main chart */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-sm font-semibold text-white">USDC CEX Flows by Chain</h2>
-              <p className="text-zinc-500 text-xs mt-0.5">Daily transfer volume (USD) · CEX only</p>
-            </div>
-            {isLoading && (
-              <div className="flex items-center gap-2 text-zinc-400 text-xs">
-                <span className="w-3 h-3 border-2 border-zinc-600 border-t-blue-500 rounded-full animate-spin" />
-                Fetching {USDC_CHAINS.length} chains…
-              </div>
-            )}
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-white">USDC CEX Flows by Chain</h2>
+            <p className="text-zinc-500 text-xs mt-0.5">Daily transfer volume (USD) · CEX only</p>
           </div>
-
-          {isLoading ? (
-            <div className="h-[380px] flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <div className="w-8 h-8 border-2 border-zinc-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
-                <p className="text-zinc-500 text-sm">Loading transfer data…</p>
-              </div>
-            </div>
-          ) : (
-            <UsdcFlowsChart data={dailyVolume} chains={chainData} />
-          )}
+          <UsdcFlowsChart data={dailyVolume} chains={chains} />
         </section>
 
-        {/* Inflow / Outflow chart */}
         <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-sm font-semibold text-white">USDC CEX Inflow vs Outflow</h2>
-              <p className="text-zinc-500 text-xs mt-0.5">
-                <span className="text-emerald-500">Inflow</span> = wallet → exchange &nbsp;·&nbsp;
-                <span className="text-red-500">Outflow</span> = exchange → wallet &nbsp;·&nbsp;
-                exchange↔exchange excluded
-              </p>
-            </div>
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-white">USDC CEX Inflow vs Outflow</h2>
+            <p className="text-zinc-500 text-xs mt-0.5">
+              <span className="text-emerald-500">Inflow</span> = wallet → exchange &nbsp;·&nbsp;
+              <span className="text-red-500">Outflow</span> = exchange → wallet &nbsp;·&nbsp;
+              exchange↔exchange excluded
+            </p>
           </div>
-          {isLoading ? (
-            <div className="h-[380px] flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <div className="w-8 h-8 border-2 border-zinc-700 border-t-blue-500 rounded-full animate-spin mx-auto" />
-                <p className="text-zinc-500 text-sm">Loading flow data…</p>
-              </div>
-            </div>
-          ) : (
-            <FlowsChart data={dailyFlows} />
-          )}
+          <FlowsChart data={dailyFlows} />
         </section>
 
-        {/* Per-chain breakdown table */}
-        {status === 'done' && chainData.length > 0 && (
+        {chains.length > 0 && (
           <section className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-zinc-800">
               <h2 className="text-sm font-semibold">Chain Breakdown</h2>
@@ -182,13 +123,12 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {chainData
+                {chains
                   .slice()
-                  .sort((a, b) => (totals[b.chain] ?? 0) - (totals[a.chain] ?? 0))
-                  .map(({ chain, label, color, transfers, error }) => {
-                    const vol = totals[chain] ?? 0;
-                    const pct = total > 0 ? (vol / total) * 100 : 0;
-                    const avg = transfers.length > 0 ? vol / transfers.length : 0;
+                  .sort((a, b) => b.totalVolume - a.totalVolume)
+                  .map(({ chain, label, color, totalCount, totalVolume, error }) => {
+                    const pct = total > 0 ? (totalVolume / total) * 100 : 0;
+                    const avg = totalCount > 0 ? totalVolume / totalCount : 0;
                     return (
                       <tr key={chain} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
                         <td className="px-6 py-3">
@@ -206,10 +146,10 @@ export default function Dashboard() {
                           </div>
                         </td>
                         <td className="px-6 py-3 text-right text-zinc-300 font-mono">
-                          {transfers.length.toLocaleString()}
+                          {totalCount.toLocaleString()}
                         </td>
                         <td className="px-6 py-3 text-right text-white font-mono font-medium">
-                          {formatUsd(vol)}
+                          {formatUsd(totalVolume)}
                         </td>
                         <td className="px-6 py-3 text-right text-zinc-400 font-mono">
                           {formatUsd(avg)}

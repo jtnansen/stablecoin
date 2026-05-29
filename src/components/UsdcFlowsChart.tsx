@@ -11,12 +11,18 @@ import {
   Legend,
 } from 'recharts';
 import { format } from 'date-fns';
-import type { ChainTransfers, DailyVolumeRow } from '@/lib/types';
+import type { DailyVolumeRow } from '@/lib/types';
 import { formatUsd } from '@/lib/transforms';
+
+interface ChainMeta {
+  chain: string;
+  label: string;
+  color: string;
+}
 
 interface Props {
   data: DailyVolumeRow[];
-  chains: ChainTransfers[];
+  chains: ChainMeta[];
 }
 
 function CustomTooltip({ active, payload, label }: any) {

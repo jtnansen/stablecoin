@@ -24,3 +24,29 @@ export interface DailyVolumeRow {
   date: string;
   [chain: string]: number | string;
 }
+
+export interface StaticDayData {
+  date: string;
+  volume: number;
+  inflow: number;
+  outflow: number;
+  count: number;
+}
+
+export interface StaticChainData {
+  chain: string;
+  label: string;
+  color: string;
+  shortLabel: string;
+  totalCount: number;
+  totalVolume: number;
+  error?: string | null;
+  days: StaticDayData[];
+}
+
+export interface StaticData {
+  fetchedAt: string;
+  from: string;
+  to: string;
+  chains: StaticChainData[];
+}
