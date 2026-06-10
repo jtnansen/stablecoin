@@ -7,19 +7,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #0d0d0d; color: #e0e0e0;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      min-height: 100vh; line-height: 1.5;
-    }
+    body { background: #0d0d0d; color: #e0e0e0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; min-height: 100vh; line-height: 1.5; }
 
-    /* ── Header ── */
-    header {
-      background: #121212; border-bottom: 1px solid #222;
-      padding: 0.9rem 1.8rem;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
-    }
+    header { background: #121212; border-bottom: 1px solid #222; padding: 0.9rem 1.8rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
     .header-brand { display: flex; align-items: center; gap: 0.5rem; }
     .header-dot { width: 18px; height: 18px; border-radius: 50%; background: #ff6600; }
     .header-title { font-size: 1rem; font-weight: 700; color: #ff6600; }
@@ -28,121 +18,67 @@
     .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #555; display: inline-block; }
     .status-dot.live { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
 
-    /* ── Layout ── */
     main { max-width: 1440px; margin: 0 auto; padding: 1.4rem 1.6rem; }
-    .section {
-      background: #141414; border: 1px solid #222;
-      border-radius: 12px; padding: 1.4rem 1.6rem; margin-bottom: 1.4rem;
-    }
-    .section-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem;
-    }
+    .section { background: #141414; border: 1px solid #222; border-radius: 12px; padding: 1.4rem 1.6rem; margin-bottom: 1.4rem; }
+    .section-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem; }
     .section-title { font-size: 1rem; font-weight: 600; color: #f0f0f0; }
     .section-subtitle { font-size: 0.76rem; color: #555; margin-top: 0.15rem; }
 
-    /* ── Controls ── */
     .controls { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
-    .btn-sec {
-      background: #1e1e1e; color: #999; border: 1px solid #2a2a2a;
-      border-radius: 5px; padding: 0.38rem 0.8rem;
-      font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.12s;
-    }
+    .btn-sec { background: #1e1e1e; color: #999; border: 1px solid #2a2a2a; border-radius: 5px; padding: 0.38rem 0.8rem; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.12s; }
     .btn-sec:hover { background: #252525; color: #ccc; }
 
-    /* ── Cards ── */
-    .cards-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 0.9rem; margin-bottom: 1.4rem;
-    }
-    .card {
-      background: #141414; border: 1px solid #1e1e1e;
-      border-radius: 9px; padding: 1rem 1.1rem;
-    }
+    .cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.9rem; margin-bottom: 1.4rem; }
+    .card { background: #141414; border: 1px solid #1e1e1e; border-radius: 9px; padding: 1rem 1.1rem; }
     .card-label { font-size: 0.7rem; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.45rem; }
     .card-value { font-size: 1.3rem; font-weight: 700; color: #e0e0e0; }
     .card-note { font-size: 0.71rem; color: #444; margin-top: 0.3rem; min-height: 1em; }
     .green { color: #22c55e; }
-    .red   { color: #ef4444; }
+    .red { color: #ef4444; }
     .amber { color: #fbbf24; }
 
-    /* ── Charts ── */
     .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
     @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
     .chart-box { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 9px; padding: 1rem; }
     .chart-box-title { font-size: 0.78rem; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.8rem; }
     .chart-wrap { position: relative; height: 280px; }
-    .chart-legend-note {
-      font-size: 0.72rem; color: #555; margin-top: 0.75rem;
-      display: flex; gap: 1.2rem; flex-wrap: wrap;
-    }
+    .chart-legend-note { font-size: 0.72rem; color: #555; margin-top: 0.75rem; display: flex; gap: 1.2rem; flex-wrap: wrap; }
     .legend-item { display: flex; align-items: center; gap: 0.4rem; }
     .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
 
-    /* ── Loading ── */
-    .loading-area {
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 0.7rem;
-      height: 260px; color: #555; font-size: 0.85rem;
-    }
-    .spinner {
-      width: 22px; height: 22px;
-      border: 2.5px solid #2a2a2a; border-top-color: #ff6600;
-      border-radius: 50%; animation: spin 0.65s linear infinite;
-    }
+    .loading-area { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.7rem; height: 260px; color: #555; font-size: 0.85rem; }
+    .spinner { width: 22px; height: 22px; border: 2.5px solid #2a2a2a; border-top-color: #ff6600; border-radius: 50%; animation: spin 0.65s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Error ── */
-    .error-box {
-      background: #1e0808; border: 1px solid #5a1a1a;
-      border-radius: 7px; padding: 0.9rem 1rem;
-      font-size: 0.8rem; color: #f87171;
-      white-space: pre-wrap; word-break: break-all;
-      margin-top: 0.8rem; font-family: monospace;
-    }
+    .error-box { background: #1e0808; border: 1px solid #5a1a1a; border-radius: 7px; padding: 0.9rem 1rem; font-size: 0.8rem; color: #f87171; white-space: pre-wrap; word-break: break-all; margin-top: 0.8rem; font-family: monospace; }
     .error-box strong { color: #fca5a5; display: block; margin-bottom: 0.3rem; font-family: inherit; }
 
-    /* ── Table ── */
     .table-wrap { overflow-x: auto; margin-top: 0.5rem; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    th {
-      background: #0d0d0d; color: #555; text-align: left;
-      padding: 0.55rem 0.8rem; font-weight: 500;
-      text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.06em;
-      border-bottom: 1px solid #1e1e1e; white-space: nowrap;
-    }
+    th { background: #0d0d0d; color: #555; text-align: left; padding: 0.55rem 0.8rem; font-weight: 500; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.06em; border-bottom: 1px solid #1e1e1e; white-space: nowrap; }
     td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #181818; color: #bbb; white-space: nowrap; }
     tr:hover td { background: #181818; }
     tr.whale td { background: rgba(251,191,36,0.06); }
     tr.whale:hover td { background: rgba(251,191,36,0.1); }
     .addr-cell { font-family: 'Courier New', monospace; font-size: 0.76rem; color: #777; }
-    .badge {
-      background: #1e1e1e; border: 1px solid #2a2a2a;
-      border-radius: 4px; padding: 0.12rem 0.42rem; font-size: 0.7rem; color: #999;
-    }
+    .badge { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 4px; padding: 0.12rem 0.42rem; font-size: 0.7rem; color: #999; }
     .chain-badge { border-radius: 4px; padding: 0.12rem 0.42rem; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; }
+    .dir-badge { border-radius: 4px; padding: 0.12rem 0.42rem; font-size: 0.68rem; font-weight: 600; }
     .tx-link { color: #ff6600; text-decoration: none; font-family: monospace; font-size: 0.76rem; }
     .tx-link:hover { text-decoration: underline; }
     .empty-state { text-align: center; color: #444; padding: 2.5rem 1rem; font-size: 0.88rem; }
 
-    /* ── Countdown ── */
     .refresh-meta { display: flex; align-items: center; gap: 0.7rem; font-size: 0.76rem; color: #555; }
     .countdown-bar { flex: 1; max-width: 120px; height: 3px; background: #1e1e1e; border-radius: 2px; overflow: hidden; }
     .countdown-fill { height: 100%; background: #ff6600; border-radius: 2px; transition: width 1s linear; }
-    .new-row { animation: rowFlash 1.2s ease-out; }
-    @keyframes rowFlash { from { background: rgba(255,102,0,0.18); } to { background: transparent; } }
+    .new-row { animation: rowFlash 1.4s ease-out; }
+    @keyframes rowFlash { from { background: rgba(255,102,0,0.2); } to { background: transparent; } }
 
-    @media (max-width: 640px) {
-      main { padding: 1rem; }
-      .section { padding: 1rem; }
-      .cards-row { grid-template-columns: 1fr 1fr; }
-    }
+    @media (max-width: 640px) { main { padding: 1rem; } .section { padding: 1rem; } .cards-row { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
 
-<!-- ══ Header ═════════════════════════════════════════════════════════════ -->
 <header>
   <div class="header-brand">
     <div class="header-dot"></div>
@@ -155,23 +91,21 @@
   </div>
 </header>
 
-<!-- ══ Main ═══════════════════════════════════════════════════════════════ -->
 <main>
 
-  <!-- ── Summary cards ─────────────────────────────────────────────────── -->
   <div class="cards-row">
     <div class="card">
-      <div class="card-label">Total 24h Volume</div>
+      <div class="card-label">24h Volume</div>
       <div class="card-value" id="cardVolume">—</div>
-      <div class="card-note">across all chains</div>
+      <div class="card-note">all chains combined</div>
     </div>
     <div class="card">
-      <div class="card-label">Exchange Inflow</div>
+      <div class="card-label">CEX Inflow</div>
       <div class="card-value red" id="cardInflow">—</div>
       <div class="card-note">wallet → exchange (bearish)</div>
     </div>
     <div class="card">
-      <div class="card-label">Exchange Outflow</div>
+      <div class="card-label">CEX Outflow</div>
       <div class="card-value green" id="cardOutflow">—</div>
       <div class="card-note">exchange → wallet (bullish)</div>
     </div>
@@ -187,52 +121,52 @@
     </div>
     <div class="card">
       <div class="card-label">Last Updated</div>
-      <div class="card-value" style="font-size:0.95rem;color:#888" id="cardUpdated">—</div>
+      <div class="card-value" style="font-size:0.9rem;color:#888" id="cardUpdated">—</div>
       <div class="card-note" id="cardProgress"></div>
     </div>
   </div>
 
-  <!-- ── Flows + Volume charts ──────────────────────────────────────────── -->
+  <!-- Charts — powered by transfers data -->
   <div class="section">
     <div class="section-header">
       <div>
         <div class="section-title">Exchange Flows by Chain — 24h</div>
-        <div class="section-subtitle">Green = outflow from CEX (bullish) &nbsp;·&nbsp; Red = inflow to CEX (bearish)</div>
+        <div class="section-subtitle">Computed from raw transfers · inflow = wallet→CEX · outflow = CEX→wallet</div>
       </div>
       <div class="controls">
-        <button class="btn-sec" id="flowsRefresh">↻ Refresh</button>
+        <button class="btn-sec" id="chartsRefresh">↻ Refresh</button>
       </div>
     </div>
 
-    <div id="flowsLoading" class="loading-area">
+    <div id="chartsLoading" class="loading-area">
       <div class="spinner"></div>
-      <span id="flowsLoadingText">Fetching chain data…</span>
+      <span id="chartsLoadingText">Fetching transfers…</span>
     </div>
-    <div id="flowsContent" style="display:none">
+    <div id="chartsContent" style="display:none">
       <div class="charts-grid">
         <div class="chart-box">
           <div class="chart-box-title">Inflow vs Outflow by Chain</div>
           <div class="chart-wrap"><canvas id="flowsChart"></canvas></div>
           <div class="chart-legend-note">
-            <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div><span>Inflow to CEX</span></div>
-            <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div><span>Outflow from CEX</span></div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div><span>Inflow to CEX (bearish)</span></div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div><span>Outflow from CEX (bullish)</span></div>
           </div>
         </div>
         <div class="chart-box">
-          <div class="chart-box-title">24h USDC Volume by Chain</div>
+          <div class="chart-box-title">Total 24h Volume by Chain</div>
           <div class="chart-wrap"><canvas id="volumeChart"></canvas></div>
         </div>
       </div>
     </div>
-    <div id="flowsError" class="error-box" style="display:none"></div>
+    <div id="chartsError" class="error-box" style="display:none"></div>
   </div>
 
-  <!-- ── Live transfers table ───────────────────────────────────────────── -->
+  <!-- Live table -->
   <div class="section">
     <div class="section-header">
       <div>
         <div class="section-title">Live USDC Transfers &gt;$50M</div>
-        <div class="section-subtitle">All chains · refreshes every 10s · sorted by time</div>
+        <div class="section-subtitle">All chains · newest first · refreshes every 10s</div>
       </div>
       <div class="controls">
         <div class="refresh-meta">
@@ -252,14 +186,14 @@
       <table id="transfersTable" style="display:none">
         <thead>
           <tr>
-            <th>Time</th>
+            <th>Time (UTC)</th>
             <th>Chain</th>
             <th>From</th>
             <th>From Label</th>
             <th>To</th>
             <th>To Label</th>
             <th style="text-align:right">USD Value</th>
-            <th>Type</th>
+            <th>Direction</th>
             <th>Tx</th>
           </tr>
         </thead>
@@ -276,9 +210,7 @@
 <script>
 'use strict';
 
-// ── Config ────────────────────────────────────────────────────────────────
-const FLOW_URL     = '/api/nansen?endpoint=flow-intelligence';
-const TRANSFER_URL = '/api/nansen?endpoint=transfers';
+const TRANSFER_URL      = '/api/nansen?endpoint=transfers';
 const WHALE_THRESHOLD   = 50_000_000;
 const TABLE_REFRESH_SEC = 10;
 
@@ -304,47 +236,49 @@ const USDC = {
   solana:    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
 };
 
-// ── State ─────────────────────────────────────────────────────────────────
-let flowsChart    = null;
-let volumeChart   = null;
+let flowsChart   = null;
+let volumeChart  = null;
 let countdownTimer = null;
-let countdownSec  = TABLE_REFRESH_SEC;
+let countdownSec = TABLE_REFRESH_SEC;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function fmtUSD(v) {
-  if (v === null || v === undefined || isNaN(Number(v))) return '—';
+  if (v == null || isNaN(Number(v))) return '—';
   const n = Number(v), abs = Math.abs(n);
   const s = abs >= 1e9 ? (abs/1e9).toFixed(2)+'B'
           : abs >= 1e6 ? (abs/1e6).toFixed(1)+'M'
           : abs >= 1e3 ? (abs/1e3).toFixed(1)+'K'
           :               abs.toFixed(0);
-  return '$' + s;
+  return (n < 0 ? '-' : '') + '$' + s;
 }
 
 function fmtAddr(a) {
   if (!a) return '—';
-  if (a.length <= 12) return a;
-  return a.slice(0, 6) + '…' + a.slice(-4);
+  return a.length > 14 ? a.slice(0,6) + '…' + a.slice(-4) : a;
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  if (isNaN(d)) return String(ts).slice(0,19).replace('T',' ');
+  return d.toISOString().slice(0,19).replace('T',' ');
 }
 
 function get24hRange() {
   const to   = new Date();
-  const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-  return {
-    from: from.toISOString().slice(0, 19) + 'Z',
-    to:   to.toISOString().slice(0, 19) + 'Z',
-  };
+  const from = new Date(to.getTime() - 24*60*60*1000);
+  return { from: from.toISOString().slice(0,19)+'Z', to: to.toISOString().slice(0,19)+'Z' };
 }
+
+// label format from Nansen: CEX wallets are tagged with 🏦
+function isCex(label) { return typeof label === 'string' && label.includes('🏦'); }
 
 function chainById(id) { return CHAINS.find(c => c.id === id); }
 
-// ── API — calls our server-side proxy ────────────────────────────────────
 async function apiPost(url, body) {
   const res = await fetch(url, {
     method: 'POST',
@@ -352,154 +286,147 @@ async function apiPost(url, body) {
     body: JSON.stringify(body),
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(`HTTP ${res.status}\n${text.slice(0, 600)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0,400)}`);
   try { return JSON.parse(text); }
-  catch { throw new Error(`Non-JSON response (HTTP ${res.status}):\n${text.slice(0, 400)}`); }
+  catch { throw new Error(`Non-JSON (HTTP ${res.status}): ${text.slice(0,200)}`); }
 }
 
-// ── Refresh buttons ───────────────────────────────────────────────────────
-document.getElementById('flowsRefresh').addEventListener('click', fetchFlows);
-document.getElementById('tableRefresh').addEventListener('click', () => {
-  resetCountdown();
-  fetchTable();
-});
+const yTickCb = v => {
+  const abs = Math.abs(v);
+  const s = abs >= 1e9 ? (abs/1e9).toFixed(1)+'B' : abs >= 1e6 ? (abs/1e6).toFixed(0)+'M' : abs >= 1e3 ? (abs/1e3).toFixed(0)+'K' : abs.toFixed(0);
+  return (v < 0 ? '-' : '') + '$' + s;
+};
 
-// ── FLOWS ─────────────────────────────────────────────────────────────────
-async function fetchFlows() {
-  document.getElementById('flowsError').style.display   = 'none';
-  document.getElementById('flowsLoading').style.display = 'flex';
-  document.getElementById('flowsContent').style.display = 'none';
+const chartBaseOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    tooltip: { backgroundColor:'#1a1a1a', borderColor:'#333', borderWidth:1, titleColor:'#ccc', bodyColor:'#aaa' },
+  },
+  scales: {
+    x: { ticks:{ color:'#666', font:{size:10} }, grid:{ color:'#1c1c1c' } },
+    y: { ticks:{ color:'#555', font:{size:10}, callback: yTickCb }, grid:{ color:'#1c1c1c' } },
+  },
+};
 
-  const results = {};
-  const errors  = [];
-  let done = 0;
+// ── Chart fetch — per_page:1000 for accuracy ──────────────────────────────
+async function fetchChartData() {
+  document.getElementById('chartsError').style.display   = 'none';
+  document.getElementById('chartsLoading').style.display = 'flex';
+  document.getElementById('chartsContent').style.display = 'none';
 
-  for (const chain of CHAINS) {
-    document.getElementById('flowsLoadingText').textContent =
-      `Fetching ${chain.label} (${++done}/${CHAINS.length})…`;
-    try {
-      const json = await apiPost(FLOW_URL, {
+  const range  = get24hRange();
+  const errors = [];
+  // per chain: { inflow, outflow, volume }
+  const agg = {};
+  CHAINS.forEach(c => { agg[c.id] = { inflow: 0, outflow: 0, volume: 0 }; });
+
+  await Promise.allSettled(
+    CHAINS.map(chain =>
+      apiPost(TRANSFER_URL, {
         chain: chain.id,
         token_address: USDC[chain.id],
-        timeframe: '1d',
-      });
-      const row = Array.isArray(json?.data) ? json.data[0] : (json?.data ?? null);
-      results[chain.id] = {
-        net:     Number(row?.exchange_net_flow_usd  ?? 0),
-        inflow:  Number(row?.exchange_inflow_usd    ?? 0),
-        outflow: Math.abs(Number(row?.exchange_outflow_usd ?? 0)),
-        volume:  Number(row?.total_volume_usd ?? row?.volume_usd ?? 0),
-      };
-    } catch (e) {
-      errors.push(`${chain.label}: ${e.message.split('\n')[0]}`);
-      results[chain.id] = { net: 0, inflow: 0, outflow: 0, volume: 0 };
-    }
-    if (done < CHAINS.length) await sleep(180);
-  }
+        date: { from: range.from, to: range.to },
+        pagination: { page: 1, per_page: 1000 },
+      }).then(json => {
+        const rows = Array.isArray(json?.data)      ? json.data
+                   : Array.isArray(json?.transfers) ? json.transfers
+                   : Array.isArray(json?.results)   ? json.results : [];
+        for (const row of rows) {
+          const usd     = Number(row.transfer_value_usd ?? 0);
+          const fromCex = isCex(row.from_address_label);
+          const toCex   = isCex(row.to_address_label);
+          agg[chain.id].volume += usd;
+          if (!fromCex && toCex)  agg[chain.id].inflow  += usd;
+          if (fromCex  && !toCex) agg[chain.id].outflow += usd;
+        }
+      }).catch(e => errors.push(`${chain.label}: ${e.message}`))
+    )
+  );
 
-  document.getElementById('flowsLoading').style.display = 'none';
+  document.getElementById('chartsLoading').style.display = 'none';
 
   if (errors.length) {
-    const errEl = document.getElementById('flowsError');
-    errEl.style.display = 'block';
-    errEl.innerHTML = `<strong>Partial errors (${errors.length} chains):</strong>\n${esc(errors.join('\n'))}`;
+    const el = document.getElementById('chartsError');
+    el.style.display = 'block';
+    el.innerHTML = `<strong>Partial errors (${errors.length} chains):</strong>\n${esc(errors.join('\n'))}`;
   }
 
-  renderFlowCharts(results);
-  updateSummaryCards(results);
-  document.getElementById('statusText').textContent = 'Live';
+  // summary cards
+  let totalVol = 0, totalIn = 0, totalOut = 0;
+  for (const r of Object.values(agg)) { totalVol += r.volume; totalIn += r.inflow; totalOut += r.outflow; }
+  const net = totalIn - totalOut;
+
+  document.getElementById('cardVolume').textContent  = fmtUSD(totalVol);
+  document.getElementById('cardInflow').textContent  = fmtUSD(totalIn);
+  document.getElementById('cardOutflow').textContent = fmtUSD(totalOut);
+  const netEl = document.getElementById('cardNet');
+  netEl.textContent = fmtUSD(Math.abs(net));
+  netEl.className   = 'card-value ' + (net > 0 ? 'red' : 'green');
+  document.getElementById('cardNetNote').textContent = net > 0 ? 'net into exchanges (bearish)' : 'net out of exchanges (bullish)';
+  document.getElementById('cardUpdated').textContent  = new Date().toLocaleTimeString();
+  document.getElementById('cardProgress').textContent = `${CHAINS.length} chains · 1000 tx/chain`;
+  document.getElementById('statusText').textContent   = 'Live';
+
+  renderCharts(agg);
 }
 
-function renderFlowCharts(results) {
+function renderCharts(agg) {
   const labels   = CHAINS.map(c => c.label);
-  const inflows  = CHAINS.map(c => results[c.id]?.inflow  ?? 0);
-  const outflows = CHAINS.map(c => results[c.id]?.outflow ?? 0);
-  const volumes  = CHAINS.map(c => {
-    const r = results[c.id];
-    return r?.volume > 0 ? r.volume : (r?.inflow ?? 0) + (r?.outflow ?? 0);
-  });
-  const colors = CHAINS.map(c => c.color);
+  const inflows  = CHAINS.map(c => agg[c.id]?.inflow  ?? 0);
+  const outflows = CHAINS.map(c => agg[c.id]?.outflow ?? 0);
+  const volumes  = CHAINS.map(c => agg[c.id]?.volume  ?? 0);
+  const colors   = CHAINS.map(c => c.color);
 
-  const yTickCb = v => {
-    const abs = Math.abs(v);
-    const s = abs >= 1e9 ? (abs/1e9).toFixed(1)+'B'
-            : abs >= 1e6 ? (abs/1e6).toFixed(0)+'M'
-            : abs >= 1e3 ? (abs/1e3).toFixed(0)+'K'
-            : abs.toFixed(0);
-    return '$' + s;
-  };
-
-  const baseOpts = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { labels: { color: '#888', font: { size: 11 }, padding: 12 } },
-      tooltip: {
-        backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
-        titleColor: '#ccc', bodyColor: '#aaa',
-        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtUSD(ctx.raw)}` },
-      },
-    },
-    scales: {
-      x: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: '#1c1c1c' } },
-      y: { ticks: { color: '#555', font: { size: 10 }, callback: yTickCb }, grid: { color: '#1c1c1c' } },
-    },
-  };
-
+  // flows chart: grouped inflow (red) + outflow (green) per chain
   if (flowsChart) flowsChart.destroy();
   flowsChart = new Chart(document.getElementById('flowsChart').getContext('2d'), {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label: 'Inflow (→ CEX)',  data: inflows,  backgroundColor: 'rgba(239,68,68,0.75)', borderColor: 'rgba(239,68,68,1)',  borderWidth: 1 },
-        { label: 'Outflow (← CEX)', data: outflows, backgroundColor: 'rgba(34,197,94,0.70)', borderColor: 'rgba(34,197,94,1)', borderWidth: 1 },
+        { label: 'Inflow → CEX',  data: inflows,  backgroundColor: 'rgba(239,68,68,0.75)',  borderColor: 'rgba(239,68,68,1)',  borderWidth: 1, borderRadius: 2 },
+        { label: 'Outflow ← CEX', data: outflows, backgroundColor: 'rgba(34,197,94,0.70)',  borderColor: 'rgba(34,197,94,1)', borderWidth: 1, borderRadius: 2 },
       ],
     },
-    options: baseOpts,
+    options: {
+      ...chartBaseOpts,
+      plugins: {
+        ...chartBaseOpts.plugins,
+        legend: { labels: { color:'#888', font:{size:11}, padding:14 } },
+        tooltip: { ...chartBaseOpts.plugins.tooltip, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtUSD(ctx.raw)}` } },
+      },
+    },
   });
 
+  // volume chart: total volume per chain
   if (volumeChart) volumeChart.destroy();
   volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ label: '24h Volume', data: volumes, backgroundColor: colors.map(c => c + 'bb'), borderColor: colors, borderWidth: 1, borderRadius: 3 }],
+      datasets: [{ label: '24h Volume', data: volumes, backgroundColor: colors.map(c => c+'bb'), borderColor: colors, borderWidth: 1, borderRadius: 3 }],
     },
-    options: { ...baseOpts, plugins: { ...baseOpts.plugins, legend: { display: false } } },
+    options: {
+      ...chartBaseOpts,
+      plugins: {
+        ...chartBaseOpts.plugins,
+        legend: { display: false },
+        tooltip: { ...chartBaseOpts.plugins.tooltip, callbacks: { label: ctx => ` Volume: ${fmtUSD(ctx.raw)}` } },
+      },
+    },
   });
 
-  document.getElementById('flowsContent').style.display = 'block';
+  document.getElementById('chartsContent').style.display = 'block';
 }
 
-function updateSummaryCards(results) {
-  let totalIn = 0, totalOut = 0;
-  for (const r of Object.values(results)) {
-    totalIn  += r.inflow  ?? 0;
-    totalOut += r.outflow ?? 0;
-  }
-  const net = totalIn - totalOut;
-
-  document.getElementById('cardVolume').textContent  = fmtUSD(totalIn + totalOut);
-  document.getElementById('cardInflow').textContent  = fmtUSD(totalIn);
-  document.getElementById('cardOutflow').textContent = fmtUSD(totalOut);
-
-  const netEl = document.getElementById('cardNet');
-  netEl.textContent = fmtUSD(Math.abs(net));
-  netEl.className   = 'card-value ' + (net > 0 ? 'red' : 'green');
-  document.getElementById('cardNetNote').textContent = net > 0 ? 'net into exchanges' : 'net out of exchanges';
-
-  document.getElementById('cardUpdated').textContent  = new Date().toLocaleTimeString();
-  document.getElementById('cardProgress').textContent = `${CHAINS.length}/${CHAINS.length} chains`;
-}
-
-// ── TABLE (live, every 10s) ───────────────────────────────────────────────
+// ── Table fetch — top-50 by value, refreshes every 10s ────────────────────
 async function fetchTable() {
   document.getElementById('tableError').style.display   = 'none';
   document.getElementById('tableLoading').style.display = 'block';
 
   const range  = get24hRange();
   const errors = [];
-  const newRows = [];
+  const whales = [];
 
   await Promise.allSettled(
     CHAINS.map(chain =>
@@ -514,30 +441,30 @@ async function fetchTable() {
                    : Array.isArray(json?.transfers) ? json.transfers
                    : Array.isArray(json?.results)   ? json.results : [];
         for (const row of rows) {
-          const usdVal = Number(row.transfer_value_usd ?? row.usd_value ?? row.value_usd ?? 0);
-          if (usdVal < WHALE_THRESHOLD) continue;
-          newRows.push({ ...row, _chainId: chain.id, _usdVal: usdVal });
+          const usd = Number(row.transfer_value_usd ?? 0);
+          if (usd >= WHALE_THRESHOLD) whales.push({ ...row, _chainId: chain.id, _usd: usd });
         }
-      }).catch(e => errors.push(`${chain.label}: ${e.message.split('\n')[0]}`))
+      }).catch(e => errors.push(`${chain.label}: ${e.message}`))
     )
   );
 
   document.getElementById('tableLoading').style.display = 'none';
 
   if (errors.length) {
-    const errEl = document.getElementById('tableError');
-    errEl.style.display = 'block';
-    errEl.innerHTML = `<strong>Partial fetch errors:</strong>\n${esc(errors.join('\n'))}`;
+    const el = document.getElementById('tableError');
+    el.style.display = 'block';
+    el.innerHTML = `<strong>Partial fetch errors:</strong>\n${esc(errors.join('\n'))}`;
   }
 
-  newRows.sort((a, b) => {
-    const ta = a.block_time ?? a.timestamp ?? a.time ?? '';
-    const tb = b.block_time ?? b.timestamp ?? b.time ?? '';
-    return new Date(tb) - new Date(ta);
+  // sort newest first using block_timestamp
+  whales.sort((a, b) => {
+    const ta = a.block_timestamp ?? '';
+    const tb = b.block_timestamp ?? '';
+    return tb.localeCompare(ta);
   });
 
-  document.getElementById('cardWhales').textContent = String(newRows.length);
-  renderTable(newRows);
+  document.getElementById('cardWhales').textContent = String(whales.length);
+  renderTable(whales);
 }
 
 function renderTable(rows) {
@@ -555,49 +482,57 @@ function renderTable(rows) {
   tbody.querySelectorAll('tr[data-key]').forEach(tr => existing.add(tr.dataset.key));
   tbody.innerHTML = '';
 
-  rows.forEach(row => {
+  for (const row of rows) {
     const chain    = chainById(row._chainId);
-    const usdVal   = row._usdVal;
-    const txHash   = row.tx_hash ?? row.transaction_hash ?? row.hash ?? '';
-    const time     = row.block_time ?? row.timestamp ?? row.time ?? row.created_at ?? '';
-    const fromAddr = row.from_address   ?? row.sender_address   ?? row.sender   ?? '';
-    const toAddr   = row.to_address     ?? row.receiver_address ?? row.receiver ?? '';
-    const fromLbl  = row.from_address_label ?? row.from_label   ?? row.sender_label   ?? '';
-    const toLbl    = row.to_address_label   ?? row.to_label     ?? row.receiver_label ?? '';
-    const txType   = row.tx_type ?? row.type ?? row.transfer_type ?? row.direction ?? '';
+    const usd      = row._usd;
 
-    const key    = txHash || `${time}-${fromAddr}-${usdVal}`;
-    const isNew  = !existing.has(key);
-    const timeStr = time ? new Date(time).toLocaleString(undefined, { dateStyle:'short', timeStyle:'short' }) : '—';
+    // Nansen transfers API field names (from types.ts)
+    const ts       = row.block_timestamp ?? '';
+    const txHash   = row.transaction_hash ?? row.tx_hash ?? '';
+    const fromAddr = row.from_address ?? '';
+    const toAddr   = row.to_address   ?? '';
+    const fromLbl  = row.from_address_label ?? '';
+    const toLbl    = row.to_address_label   ?? '';
+
+    const key   = txHash || `${ts}-${fromAddr}-${usd}`;
+    const isNew = !existing.has(key);
+
+    const fromCex = isCex(fromLbl);
+    const toCex   = isCex(toLbl);
+    let dirText = '—', dirStyle = 'background:#1e1e1e;color:#666;border:1px solid #2a2a2a';
+    if      (!fromCex && toCex)  { dirText = 'Inflow';    dirStyle = 'background:#ef444422;color:#ef4444;border:1px solid #ef444455'; }
+    else if (fromCex  && !toCex) { dirText = 'Outflow';   dirStyle = 'background:#22c55e22;color:#22c55e;border:1px solid #22c55e55'; }
+    else if (fromCex  && toCex)  { dirText = 'CEX↔CEX';  dirStyle = 'background:#88888822;color:#888;border:1px solid #88888855'; }
+
     const base   = chain?.explorer ?? '';
     const txCell = txHash
       ? `<a class="tx-link" href="${base}${esc(txHash)}" target="_blank" rel="noopener">${esc(txHash.slice(0,8))}…</a>`
       : '—';
 
-    const usdColor    = usdVal >= 5e8 ? '#fbbf24' : usdVal >= 1e8 ? '#f59e0b' : '#bbb';
+    const usdColor    = usd >= 5e8 ? '#fbbf24' : usd >= 1e8 ? '#f59e0b' : '#bbb';
     const chainColor  = chain?.color ?? '#888';
 
     const tr = document.createElement('tr');
     tr.dataset.key = key;
-    if (usdVal >= 5e8) tr.classList.add('whale');
-    if (isNew)         tr.classList.add('new-row');
+    if (usd >= 5e8) tr.classList.add('whale');
+    if (isNew)      tr.classList.add('new-row');
 
     tr.innerHTML = `
-      <td>${esc(timeStr)}</td>
+      <td style="font-variant-numeric:tabular-nums;font-size:0.76rem;color:#777">${esc(fmtTime(ts))}</td>
       <td><span class="chain-badge" style="background:${chainColor}22;color:${chainColor};border:1px solid ${chainColor}44">${esc(chain?.label ?? row._chainId)}</span></td>
       <td class="addr-cell" title="${esc(fromAddr)}">${esc(fmtAddr(fromAddr))}</td>
       <td>${fromLbl ? `<span class="badge">${esc(fromLbl)}</span>` : '<span style="color:#2a2a2a">—</span>'}</td>
       <td class="addr-cell" title="${esc(toAddr)}">${esc(fmtAddr(toAddr))}</td>
       <td>${toLbl   ? `<span class="badge">${esc(toLbl)}</span>`   : '<span style="color:#2a2a2a">—</span>'}</td>
-      <td style="text-align:right;font-weight:700;color:${usdColor}">${fmtUSD(usdVal)}</td>
-      <td>${txType ? `<span class="badge">${esc(String(txType))}</span>` : '—'}</td>
+      <td style="text-align:right;font-weight:700;color:${usdColor}">${fmtUSD(usd)}</td>
+      <td><span class="dir-badge" style="${dirStyle}">${esc(dirText)}</span></td>
       <td>${txCell}</td>
     `;
     tbody.appendChild(tr);
-  });
+  }
 }
 
-// ── Countdown + table loop ────────────────────────────────────────────────
+// ── Countdown ─────────────────────────────────────────────────────────────
 function resetCountdown() {
   countdownSec = TABLE_REFRESH_SEC;
   document.getElementById('countdownFill').style.width = '100%';
@@ -613,15 +548,15 @@ function startTableLoop() {
     const pct = Math.max(0, (countdownSec / TABLE_REFRESH_SEC) * 100);
     document.getElementById('countdownFill').style.width = pct + '%';
     document.getElementById('countdownText').textContent = `${Math.max(0, countdownSec)}s`;
-    if (countdownSec <= 0) {
-      fetchTable();
-      resetCountdown();
-    }
+    if (countdownSec <= 0) { fetchTable(); resetCountdown(); }
   }, 1000);
 }
 
+document.getElementById('chartsRefresh').addEventListener('click', fetchChartData);
+document.getElementById('tableRefresh').addEventListener('click', () => { resetCountdown(); fetchTable(); });
+
 // ── Boot ──────────────────────────────────────────────────────────────────
-fetchFlows();
+fetchChartData();
 startTableLoop();
 </script>
 </body>
