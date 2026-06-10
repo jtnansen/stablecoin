@@ -37,14 +37,15 @@
     .red { color: #ef4444; }
     .amber { color: #fbbf24; }
 
-    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .charts-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.2rem; }
     @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
     .chart-box { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 9px; padding: 1rem; }
     .chart-box-title { font-size: 0.78rem; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.8rem; }
-    .chart-wrap { position: relative; height: 280px; }
+    .chart-wrap { position: relative; height: 300px; }
     .chart-legend-note { font-size: 0.72rem; color: #555; margin-top: 0.75rem; display: flex; gap: 1.2rem; flex-wrap: wrap; }
     .legend-item { display: flex; align-items: center; gap: 0.4rem; }
     .legend-swatch { width: 10px; height: 10px; border-radius: 2px; }
+    .legend-line { width: 16px; height: 2px; border-radius: 2px; }
 
     .loading-area { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.7rem; height: 260px; color: #555; font-size: 0.85rem; }
     .spinner { width: 22px; height: 22px; border: 2.5px solid #2a2a2a; border-top-color: #ff6600; border-radius: 50%; animation: spin 0.65s linear infinite; }
@@ -52,6 +53,15 @@
 
     .error-box { background: #1e0808; border: 1px solid #5a1a1a; border-radius: 7px; padding: 0.9rem 1rem; font-size: 0.8rem; color: #f87171; white-space: pre-wrap; word-break: break-all; margin-top: 0.8rem; font-family: monospace; }
     .error-box strong { color: #fca5a5; display: block; margin-bottom: 0.3rem; font-family: inherit; }
+
+    /* two-col widget layout */
+    .dep-with-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    @media (max-width: 900px) { .dep-with-grid { grid-template-columns: 1fr; } }
+    .sub-table-box { background: #0d0d0d; border: 1px solid #1e1e1e; border-radius: 9px; padding: 1rem; }
+    .sub-table-title { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.2rem; }
+    .sub-table-title.green { color: #22c55e; }
+    .sub-table-title.red  { color: #ef4444; }
+    .sub-table-sub { font-size: 0.71rem; color: #555; margin-bottom: 0.7rem; }
 
     .table-wrap { overflow-x: auto; margin-top: 0.5rem; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
@@ -101,13 +111,13 @@
     </div>
     <div class="card">
       <div class="card-label">CEX Inflow</div>
-      <div class="card-value red" id="cardInflow">—</div>
-      <div class="card-note">wallet → exchange (bearish)</div>
+      <div class="card-value green" id="cardInflow">—</div>
+      <div class="card-note">wallet → exchange</div>
     </div>
     <div class="card">
       <div class="card-label">CEX Outflow</div>
-      <div class="card-value green" id="cardOutflow">—</div>
-      <div class="card-note">exchange → wallet (bullish)</div>
+      <div class="card-value red" id="cardOutflow">—</div>
+      <div class="card-note">exchange → wallet</div>
     </div>
     <div class="card">
       <div class="card-label">Net Flow</div>
@@ -130,8 +140,8 @@
   <div class="section">
     <div class="section-header">
       <div>
-        <div class="section-title">Exchange Flows by Chain — 24h</div>
-        <div class="section-subtitle">Computed from raw transfers · inflow = wallet→CEX · outflow = CEX→wallet</div>
+        <div class="section-title">CEX Flows — 30-min Intervals</div>
+        <div class="section-subtitle">All chains combined · inflow (wallet→CEX) positive · outflow (CEX→wallet) negative · netflow line · internal CEX↔CEX excluded</div>
       </div>
       <div class="controls">
         <button class="btn-sec" id="chartsRefresh">↻ Refresh</button>
@@ -145,11 +155,12 @@
     <div id="chartsContent" style="display:none">
       <div class="charts-grid">
         <div class="chart-box">
-          <div class="chart-box-title">Inflow vs Outflow by Chain</div>
-          <div class="chart-wrap"><canvas id="flowsChart"></canvas></div>
+          <div class="chart-box-title">Inflow / Outflow / Net · 30-min buckets · All Chains</div>
+          <div class="chart-wrap"><canvas id="flowChart"></canvas></div>
           <div class="chart-legend-note">
-            <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div><span>Inflow to CEX (bearish)</span></div>
-            <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div><span>Outflow from CEX (bullish)</span></div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div><span>Inflow to CEX (+)</span></div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div><span>Outflow from CEX (−)</span></div>
+            <div class="legend-item"><div class="legend-line" style="background:#ff6600"></div><span>Net flow</span></div>
           </div>
         </div>
         <div class="chart-box">
@@ -159,6 +170,55 @@
       </div>
     </div>
     <div id="chartsError" class="error-box" style="display:none"></div>
+  </div>
+
+  <!-- Top CEX deposits & withdrawals -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Top CEX Deposits &amp; Withdrawals — 24h</div>
+        <div class="section-subtitle">Largest single wallet→CEX deposits and CEX→wallet withdrawals · internal CEX↔CEX transfers excluded</div>
+      </div>
+      <div class="controls">
+        <button class="btn-sec" id="depWithRefresh">↻ Refresh</button>
+      </div>
+    </div>
+    <div id="depWithLoading" style="display:none;text-align:center;padding:1.5rem">
+      <div class="spinner" style="margin:0 auto 0.5rem;width:20px;height:20px;border-width:2.5px"></div>
+      <div style="color:#555;font-size:0.8rem">Loading…</div>
+    </div>
+    <div id="depWithContent" style="display:none">
+      <div class="dep-with-grid">
+        <div class="sub-table-box">
+          <div class="sub-table-title green">↑ Top Deposits</div>
+          <div class="sub-table-sub">wallet → CEX</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Time (UTC)</th><th>Chain</th><th>From</th><th>To (CEX)</th>
+                <th style="text-align:right">USD Value</th><th>Tx</th>
+              </tr></thead>
+              <tbody id="depositsBody"></tbody>
+            </table>
+            <div class="empty-state" id="depositsEmpty" style="display:none">No deposits found.</div>
+          </div>
+        </div>
+        <div class="sub-table-box">
+          <div class="sub-table-title red">↓ Top Withdrawals</div>
+          <div class="sub-table-sub">CEX → wallet</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Time (UTC)</th><th>Chain</th><th>From (CEX)</th><th>To</th>
+                <th style="text-align:right">USD Value</th><th>Tx</th>
+              </tr></thead>
+              <tbody id="withdrawalsBody"></tbody>
+            </table>
+            <div class="empty-state" id="withdrawalsEmpty" style="display:none">No withdrawals found.</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Live table -->
@@ -213,6 +273,9 @@
 const TRANSFER_URL      = '/api/nansen?endpoint=transfers';
 const WHALE_THRESHOLD   = 50_000_000;
 const TABLE_REFRESH_SEC = 10;
+const BUCKET_MINUTES    = 30;
+const N_BUCKETS         = (24 * 60) / BUCKET_MINUTES; // 48
+const TOP_N             = 10;
 
 const CHAINS = [
   { id: 'ethereum',  label: 'ETH',   color: '#627EEA', explorer: 'https://etherscan.io/tx/' },
@@ -236,10 +299,13 @@ const USDC = {
   solana:    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
 };
 
-let flowsChart   = null;
+let flowChart    = null;
 let volumeChart  = null;
 let countdownTimer = null;
 let countdownSec = TABLE_REFRESH_SEC;
+
+// transfers from the last chart fetch — reused for the deposit/withdrawal widgets
+let cachedTransfers = [];
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function esc(s) {
@@ -297,16 +363,35 @@ const yTickCb = v => {
   return (v < 0 ? '-' : '') + '$' + s;
 };
 
-const chartBaseOpts = {
-  responsive: true, maintainAspectRatio: false,
-  plugins: {
-    tooltip: { backgroundColor:'#1a1a1a', borderColor:'#333', borderWidth:1, titleColor:'#ccc', bodyColor:'#aaa' },
-  },
-  scales: {
-    x: { ticks:{ color:'#666', font:{size:10} }, grid:{ color:'#1c1c1c' } },
-    y: { ticks:{ color:'#555', font:{size:10}, callback: yTickCb }, grid:{ color:'#1c1c1c' } },
-  },
-};
+// ── 30-min bucketing (all chains combined) ─────────────────────────────────
+function buildFlowBuckets(transfers, windowStart) {
+  const BUCKET_MS = BUCKET_MINUTES * 60 * 1000;
+
+  const buckets = Array.from({ length: N_BUCKETS }, (_, i) => {
+    const t  = new Date(windowStart.getTime() + i * BUCKET_MS);
+    const hh = String(t.getUTCHours()).padStart(2,'0');
+    const mm = String(t.getUTCMinutes()).padStart(2,'0');
+    return { label: `${hh}:${mm}`, inflow: 0, outflow: 0, net: 0 };
+  });
+
+  for (const tx of transfers) {
+    const ts = new Date(tx.block_timestamp);
+    if (isNaN(ts)) continue;
+    const idx = Math.floor((ts - windowStart) / BUCKET_MS);
+    if (idx < 0 || idx >= N_BUCKETS) continue;
+
+    const usd     = Number(tx.transfer_value_usd ?? tx._usd ?? 0);
+    const fromCex = isCex(tx.from_address_label);
+    const toCex   = isCex(tx.to_address_label);
+
+    // internal CEX↔CEX (both sides CEX) is ignored by requiring exactly one CEX side
+    if      (!fromCex && toCex)  buckets[idx].inflow  += usd;   // wallet → CEX
+    else if (fromCex  && !toCex) buckets[idx].outflow += usd;   // CEX → wallet
+  }
+
+  buckets.forEach(b => { b.net = b.inflow - b.outflow; });
+  return buckets;
+}
 
 // ── Chart fetch — per_page:1000 for accuracy ──────────────────────────────
 async function fetchChartData() {
@@ -314,11 +399,12 @@ async function fetchChartData() {
   document.getElementById('chartsLoading').style.display = 'flex';
   document.getElementById('chartsContent').style.display = 'none';
 
+  const windowStart = new Date(Date.now() - 24*60*60*1000);
   const range  = get24hRange();
   const errors = [];
-  // per chain: { inflow, outflow, volume }
-  const agg = {};
-  CHAINS.forEach(c => { agg[c.id] = { inflow: 0, outflow: 0, volume: 0 }; });
+  const allTx  = [];
+  const chainVol = {};
+  CHAINS.forEach(c => { chainVol[c.id] = 0; });
 
   await Promise.allSettled(
     CHAINS.map(chain =>
@@ -332,12 +418,9 @@ async function fetchChartData() {
                    : Array.isArray(json?.transfers) ? json.transfers
                    : Array.isArray(json?.results)   ? json.results : [];
         for (const row of rows) {
-          const usd     = Number(row.transfer_value_usd ?? 0);
-          const fromCex = isCex(row.from_address_label);
-          const toCex   = isCex(row.to_address_label);
-          agg[chain.id].volume += usd;
-          if (!fromCex && toCex)  agg[chain.id].inflow  += usd;
-          if (fromCex  && !toCex) agg[chain.id].outflow += usd;
+          const usd = Number(row.transfer_value_usd ?? 0);
+          chainVol[chain.id] += usd;
+          allTx.push({ ...row, _chainId: chain.id, _usd: usd });
         }
       }).catch(e => errors.push(`${chain.label}: ${e.message}`))
     )
@@ -351,9 +434,17 @@ async function fetchChartData() {
     el.innerHTML = `<strong>Partial errors (${errors.length} chains):</strong>\n${esc(errors.join('\n'))}`;
   }
 
-  // summary cards
+  cachedTransfers = allTx;
+
+  // summary cards (all transfers, CEX↔CEX excluded from in/out)
   let totalVol = 0, totalIn = 0, totalOut = 0;
-  for (const r of Object.values(agg)) { totalVol += r.volume; totalIn += r.inflow; totalOut += r.outflow; }
+  for (const tx of allTx) {
+    totalVol += tx._usd;
+    const fromCex = isCex(tx.from_address_label);
+    const toCex   = isCex(tx.to_address_label);
+    if (!fromCex && toCex)  totalIn  += tx._usd;
+    if (fromCex  && !toCex) totalOut += tx._usd;
+  }
   const net = totalIn - totalOut;
 
   document.getElementById('cardVolume').textContent  = fmtUSD(totalVol);
@@ -361,62 +452,184 @@ async function fetchChartData() {
   document.getElementById('cardOutflow').textContent = fmtUSD(totalOut);
   const netEl = document.getElementById('cardNet');
   netEl.textContent = fmtUSD(Math.abs(net));
-  netEl.className   = 'card-value ' + (net > 0 ? 'red' : 'green');
-  document.getElementById('cardNetNote').textContent = net > 0 ? 'net into exchanges (bearish)' : 'net out of exchanges (bullish)';
+  netEl.className   = 'card-value ' + (net > 0 ? 'green' : 'red');
+  document.getElementById('cardNetNote').textContent = net > 0 ? 'net into exchanges' : 'net out of exchanges';
   document.getElementById('cardUpdated').textContent  = new Date().toLocaleTimeString();
-  document.getElementById('cardProgress').textContent = `${CHAINS.length} chains · 1000 tx/chain`;
+  document.getElementById('cardProgress').textContent = `${allTx.length.toLocaleString()} transfers · ${CHAINS.length} chains`;
   document.getElementById('statusText').textContent   = 'Live';
 
-  renderCharts(agg);
+  const buckets = buildFlowBuckets(allTx, windowStart);
+  renderFlowChart(buckets);
+  renderVolumeChart(chainVol);
+  document.getElementById('chartsContent').style.display = 'block';
+
+  renderDepWith(allTx);
 }
 
-function renderCharts(agg) {
-  const labels   = CHAINS.map(c => c.label);
-  const inflows  = CHAINS.map(c => agg[c.id]?.inflow  ?? 0);
-  const outflows = CHAINS.map(c => agg[c.id]?.outflow ?? 0);
-  const volumes  = CHAINS.map(c => agg[c.id]?.volume  ?? 0);
-  const colors   = CHAINS.map(c => c.color);
+// ── 30-min flow bar+line chart ─────────────────────────────────────────────
+function renderFlowChart(buckets) {
+  const labels    = buckets.map((b, i) => (i % 4 === 0 ? b.label : '')); // label every 2h
+  const inflows   = buckets.map(b => b.inflow);
+  const outflows  = buckets.map(b => -b.outflow); // negative
+  const nets       = buckets.map(b => b.net);
 
-  // flows chart: grouped inflow (red) + outflow (green) per chain
-  if (flowsChart) flowsChart.destroy();
-  flowsChart = new Chart(document.getElementById('flowsChart').getContext('2d'), {
+  if (flowChart) flowChart.destroy();
+  flowChart = new Chart(document.getElementById('flowChart').getContext('2d'), {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label: 'Inflow → CEX',  data: inflows,  backgroundColor: 'rgba(239,68,68,0.75)',  borderColor: 'rgba(239,68,68,1)',  borderWidth: 1, borderRadius: 2 },
-        { label: 'Outflow ← CEX', data: outflows, backgroundColor: 'rgba(34,197,94,0.70)',  borderColor: 'rgba(34,197,94,1)', borderWidth: 1, borderRadius: 2 },
+        {
+          type: 'bar', label: 'Inflow → CEX', data: inflows, stack: 'flows',
+          backgroundColor: 'rgba(34,197,94,0.72)', borderColor: 'rgba(34,197,94,1)',
+          borderWidth: 0, borderRadius: 1, barPercentage: 0.95, categoryPercentage: 1.0,
+        },
+        {
+          type: 'bar', label: 'Outflow ← CEX', data: outflows, stack: 'flows',
+          backgroundColor: 'rgba(239,68,68,0.72)', borderColor: 'rgba(239,68,68,1)',
+          borderWidth: 0, borderRadius: 1, barPercentage: 0.95, categoryPercentage: 1.0,
+        },
+        {
+          type: 'line', label: 'Net Flow', data: nets, stack: 'net',
+          borderColor: '#ff6600', backgroundColor: '#ff6600',
+          borderWidth: 1.8, pointRadius: 0, pointHoverRadius: 4, tension: 0.25, fill: false, order: 0,
+        },
       ],
     },
     options: {
-      ...chartBaseOpts,
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        ...chartBaseOpts.plugins,
-        legend: { labels: { color:'#888', font:{size:11}, padding:14 } },
-        tooltip: { ...chartBaseOpts.plugins.tooltip, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtUSD(ctx.raw)}` } },
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
+          titleColor: '#ccc', bodyColor: '#aaa',
+          callbacks: {
+            title: (items) => (buckets[items[0].dataIndex]?.label ?? '') + ' UTC',
+            label: ctx => {
+              const v = ctx.raw;
+              if (ctx.dataset.label === 'Net Flow')
+                return ` Net: ${fmtUSD(v)} (${v >= 0 ? 'into CEX' : 'out of CEX'})`;
+              return ` ${ctx.dataset.label}: ${fmtUSD(Math.abs(v))}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: '#555', font: { size: 10 }, maxRotation: 0, autoSkip: false },
+          grid: { color: '#1a1a1a' },
+        },
+        y: {
+          stacked: true,
+          ticks: { color: '#555', font: { size: 10 }, callback: yTickCb },
+          grid: { color: '#1c1c1c', zeroLineColor: '#333' },
+        },
       },
     },
   });
+}
 
-  // volume chart: total volume per chain
+// ── Volume by chain chart ──────────────────────────────────────────────────
+function renderVolumeChart(chainVol) {
+  const labels = CHAINS.map(c => c.label);
+  const data   = CHAINS.map(c => chainVol[c.id] ?? 0);
+  const colors = CHAINS.map(c => c.color);
+
   if (volumeChart) volumeChart.destroy();
   volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ label: '24h Volume', data: volumes, backgroundColor: colors.map(c => c+'bb'), borderColor: colors, borderWidth: 1, borderRadius: 3 }],
+      datasets: [{ label: '24h Volume', data, backgroundColor: colors.map(c => c+'bb'), borderColor: colors, borderWidth: 1, borderRadius: 3 }],
     },
     options: {
-      ...chartBaseOpts,
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        ...chartBaseOpts.plugins,
         legend: { display: false },
-        tooltip: { ...chartBaseOpts.plugins.tooltip, callbacks: { label: ctx => ` Volume: ${fmtUSD(ctx.raw)}` } },
+        tooltip: {
+          backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
+          titleColor: '#ccc', bodyColor: '#aaa',
+          callbacks: { label: ctx => ` Volume: ${fmtUSD(ctx.raw)}` },
+        },
+      },
+      scales: {
+        x: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: '#1c1c1c' } },
+        y: { ticks: { color: '#555', font: { size: 10 }, callback: yTickCb }, grid: { color: '#1c1c1c' } },
       },
     },
   });
+}
 
-  document.getElementById('chartsContent').style.display = 'block';
+// ── Top CEX deposits & withdrawals ─────────────────────────────────────────
+function renderDepWith(transfers) {
+  document.getElementById('depWithContent').style.display = 'block';
+
+  // internal CEX↔CEX excluded by requiring exactly one CEX side
+  const deposits = transfers
+    .filter(tx => !isCex(tx.from_address_label) && isCex(tx.to_address_label))
+    .sort((a, b) => b._usd - a._usd)
+    .slice(0, TOP_N);
+
+  const withdrawals = transfers
+    .filter(tx => isCex(tx.from_address_label) && !isCex(tx.to_address_label))
+    .sort((a, b) => b._usd - a._usd)
+    .slice(0, TOP_N);
+
+  fillDepWithTable('depositsBody',    'depositsEmpty',    deposits,    'dep');
+  fillDepWithTable('withdrawalsBody', 'withdrawalsEmpty', withdrawals, 'with');
+}
+
+function fillDepWithTable(tbodyId, emptyId, rows, type) {
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = '';
+
+  if (!rows.length) {
+    document.getElementById(emptyId).style.display = 'block';
+    return;
+  }
+  document.getElementById(emptyId).style.display = 'none';
+
+  for (const row of rows) {
+    const chain    = chainById(row._chainId);
+    const usd      = row._usd;
+    const ts       = row.block_timestamp ?? '';
+    const txHash   = row.transaction_hash ?? row.tx_hash ?? '';
+    const fromAddr = row.from_address ?? '';
+    const toAddr   = row.to_address   ?? '';
+    const fromLbl  = row.from_address_label ?? '';
+    const toLbl    = row.to_address_label   ?? '';
+
+    const base   = chain?.explorer ?? '';
+    const txCell = txHash
+      ? `<a class="tx-link" href="${base}${esc(txHash)}" target="_blank" rel="noopener">${esc(txHash.slice(0,8))}…</a>`
+      : '—';
+
+    const usdColor   = usd >= 5e8 ? '#fbbf24' : usd >= 1e8 ? '#f59e0b' : '#bbb';
+    const chainColor = chain?.color ?? '#888';
+
+    // deposits: From (wallet addr) + To (CEX label); withdrawals: From (CEX label) + To (wallet addr)
+    const colA = type === 'dep'
+      ? `<td class="addr-cell" title="${esc(fromAddr)}">${esc(fmtAddr(fromAddr))}</td>`
+      : `<td>${fromLbl ? `<span class="badge">${esc(fromLbl)}</span>` : '<span style="color:#2a2a2a">—</span>'}</td>`;
+
+    const colB = type === 'dep'
+      ? `<td>${toLbl ? `<span class="badge">${esc(toLbl)}</span>` : '<span style="color:#2a2a2a">—</span>'}</td>`
+      : `<td class="addr-cell" title="${esc(toAddr)}">${esc(fmtAddr(toAddr))}</td>`;
+
+    const tr = document.createElement('tr');
+    if (usd >= 5e8) tr.classList.add('whale');
+    tr.innerHTML = `
+      <td style="font-size:0.76rem;color:#666;font-variant-numeric:tabular-nums">${esc(fmtTime(ts))}</td>
+      <td><span class="chain-badge" style="background:${chainColor}22;color:${chainColor};border:1px solid ${chainColor}44">${esc(chain?.label ?? row._chainId)}</span></td>
+      ${colA}${colB}
+      <td style="text-align:right;font-weight:700;color:${usdColor}">${fmtUSD(usd)}</td>
+      <td>${txCell}</td>
+    `;
+    tbody.appendChild(tr);
+  }
 }
 
 // ── Table fetch — top-50 by value, refreshes every 10s ────────────────────
@@ -456,7 +669,6 @@ async function fetchTable() {
     el.innerHTML = `<strong>Partial fetch errors:</strong>\n${esc(errors.join('\n'))}`;
   }
 
-  // sort newest first using block_timestamp
   whales.sort((a, b) => {
     const ta = a.block_timestamp ?? '';
     const tb = b.block_timestamp ?? '';
@@ -486,7 +698,6 @@ function renderTable(rows) {
     const chain    = chainById(row._chainId);
     const usd      = row._usd;
 
-    // Nansen transfers API field names (from types.ts)
     const ts       = row.block_timestamp ?? '';
     const txHash   = row.transaction_hash ?? row.tx_hash ?? '';
     const fromAddr = row.from_address ?? '';
@@ -500,8 +711,8 @@ function renderTable(rows) {
     const fromCex = isCex(fromLbl);
     const toCex   = isCex(toLbl);
     let dirText = '—', dirStyle = 'background:#1e1e1e;color:#666;border:1px solid #2a2a2a';
-    if      (!fromCex && toCex)  { dirText = 'Inflow';    dirStyle = 'background:#ef444422;color:#ef4444;border:1px solid #ef444455'; }
-    else if (fromCex  && !toCex) { dirText = 'Outflow';   dirStyle = 'background:#22c55e22;color:#22c55e;border:1px solid #22c55e55'; }
+    if      (!fromCex && toCex)  { dirText = 'Inflow';    dirStyle = 'background:#22c55e22;color:#22c55e;border:1px solid #22c55e55'; }
+    else if (fromCex  && !toCex) { dirText = 'Outflow';   dirStyle = 'background:#ef444422;color:#ef4444;border:1px solid #ef444455'; }
     else if (fromCex  && toCex)  { dirText = 'CEX↔CEX';  dirStyle = 'background:#88888822;color:#888;border:1px solid #88888855'; }
 
     const base   = chain?.explorer ?? '';
@@ -553,6 +764,7 @@ function startTableLoop() {
 }
 
 document.getElementById('chartsRefresh').addEventListener('click', fetchChartData);
+document.getElementById('depWithRefresh').addEventListener('click', () => renderDepWith(cachedTransfers));
 document.getElementById('tableRefresh').addEventListener('click', () => { resetCountdown(); fetchTable(); });
 
 // ── Boot ──────────────────────────────────────────────────────────────────
