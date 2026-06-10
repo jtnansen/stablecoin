@@ -125,7 +125,7 @@
       <div class="card-note" id="cardNetNote"></div>
     </div>
     <div class="card">
-      <div class="card-label">Transfers &gt;$50M</div>
+      <div class="card-label">Transfers &gt;$25M</div>
       <div class="card-value amber" id="cardWhales">—</div>
       <div class="card-note">past 24 hours</div>
     </div>
@@ -170,6 +170,44 @@
       </div>
     </div>
     <div id="chartsError" class="error-box" style="display:none"></div>
+  </div>
+
+  <!-- Smart Money flows -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Smart Money Net Flow — 24h</div>
+        <div class="section-subtitle" id="smSubtitle">Nansen Smart Money net USDC flow by chain · inflow / accumulation (+, green) · outflow / distribution (−, red)</div>
+      </div>
+      <div class="controls">
+        <button class="btn-sec" id="smRefresh">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div id="smLoading" class="loading-area">
+      <div class="spinner"></div>
+      <span>Fetching smart money flows…</span>
+    </div>
+    <div id="smContent" style="display:none">
+      <div class="charts-grid">
+        <div class="chart-box">
+          <div class="chart-box-title">Smart Money Net Flow by Chain · 24h</div>
+          <div class="chart-wrap"><canvas id="smChart"></canvas></div>
+          <div class="chart-legend-note">
+            <div class="legend-item"><div class="legend-swatch" style="background:#22c55e"></div><span>Net inflow (accumulating USDC)</span></div>
+            <div class="legend-item"><div class="legend-swatch" style="background:#ef4444"></div><span>Net outflow (distributing USDC)</span></div>
+          </div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">Net Flow by Cohort · 24h · All Chains</div>
+          <div class="chart-wrap"><canvas id="smCohortChart"></canvas></div>
+          <div class="chart-legend-note">
+            <div class="legend-item"><span>Smart Trader · Top PnL · Whale · Public Figure · Fresh Wallets</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="smError" class="error-box" style="display:none"></div>
   </div>
 
   <!-- Top CEX deposits & withdrawals -->
@@ -225,7 +263,7 @@
   <div class="section">
     <div class="section-header">
       <div>
-        <div class="section-title">Live USDC Transfers &gt;$50M</div>
+        <div class="section-title">Live USDC Transfers &gt;$25M</div>
         <div class="section-subtitle">All chains · newest first · refreshes every 10s</div>
       </div>
       <div class="controls">
@@ -260,7 +298,7 @@
         <tbody id="transfersBody"></tbody>
       </table>
       <div class="empty-state" id="transfersEmpty" style="display:none">
-        No USDC transfers &gt;$50M found in the past 24 hours.
+        No USDC transfers &gt;$25M found in the past 24 hours.
       </div>
     </div>
   </div>
@@ -271,7 +309,8 @@
 'use strict';
 
 const TRANSFER_URL      = '/api/nansen?endpoint=transfers';
-const WHALE_THRESHOLD   = 50_000_000;
+const FLOW_INTEL_URL    = '/api/nansen?endpoint=flow-intelligence';
+const WHALE_THRESHOLD   = 25_000_000;
 const TABLE_REFRESH_SEC = 10;
 const BUCKET_MINUTES    = 30;
 const N_BUCKETS         = (24 * 60) / BUCKET_MINUTES; // 48
@@ -283,8 +322,6 @@ const CHAINS = [
   { id: 'base',      label: 'BASE',  color: '#0052FF', explorer: 'https://basescan.org/tx/' },
   { id: 'avalanche', label: 'AVAX',  color: '#E84142', explorer: 'https://snowtrace.io/tx/' },
   { id: 'polygon',   label: 'MATIC', color: '#8247E5', explorer: 'https://polygonscan.com/tx/' },
-  { id: 'hyperevm',  label: 'HYEVM', color: '#00ff88', explorer: 'https://purrsec.com/tx/' },
-  { id: 'tron',      label: 'TRON',  color: '#FF0013', explorer: 'https://tronscan.org/#/transaction/' },
   { id: 'solana',    label: 'SOL',   color: '#9945FF', explorer: 'https://solscan.io/tx/' },
 ];
 
@@ -294,14 +331,22 @@ const USDC = {
   base:      '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
   avalanche: '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e',
   polygon:   '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359',
-  hyperevm:  '0xb88339cb7199b77e23db6e890353e22632ba630f',
-  tron:      'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8',
   solana:    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
 };
 
 let flowChart    = null;
 let volumeChart  = null;
+let smChart      = null;
+let smCohortChart = null;
 let countdownTimer = null;
+
+const SM_COHORTS = [
+  { key: 'smart_trader',  label: 'Smart Trader' },
+  { key: 'top_pnl',       label: 'Top PnL' },
+  { key: 'whale',         label: 'Whale' },
+  { key: 'public_figure', label: 'Public Figure' },
+  { key: 'fresh_wallets', label: 'Fresh Wallets' },
+];
 let countdownSec = TABLE_REFRESH_SEC;
 
 // transfers from the last chart fetch — reused for the deposit/withdrawal widgets
@@ -534,9 +579,11 @@ function renderFlowChart(buckets) {
 
 // ── Volume by chain chart ──────────────────────────────────────────────────
 function renderVolumeChart(chainVol) {
-  const labels = CHAINS.map(c => c.label);
-  const data   = CHAINS.map(c => chainVol[c.id] ?? 0);
-  const colors = CHAINS.map(c => c.color);
+  // rank biggest → smallest, left → right
+  const sorted = [...CHAINS].sort((a, b) => (chainVol[b.id] ?? 0) - (chainVol[a.id] ?? 0));
+  const labels = sorted.map(c => c.label);
+  const data   = sorted.map(c => chainVol[c.id] ?? 0);
+  const colors = sorted.map(c => c.color);
 
   if (volumeChart) volumeChart.destroy();
   volumeChart = new Chart(document.getElementById('volumeChart').getContext('2d'), {
@@ -557,6 +604,111 @@ function renderVolumeChart(chainVol) {
       },
       scales: {
         x: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: '#1c1c1c' } },
+        y: { ticks: { color: '#555', font: { size: 10 }, callback: yTickCb }, grid: { color: '#1c1c1c' } },
+      },
+    },
+  });
+}
+
+// ── Smart Money flows (Nansen flow-intelligence) ───────────────────────────
+async function fetchSmartMoney() {
+  document.getElementById('smError').style.display   = 'none';
+  document.getElementById('smLoading').style.display = 'flex';
+  document.getElementById('smContent').style.display = 'none';
+
+  const errors        = [];
+  const perChainSmart = {};   // smart_trader net flow per chain
+  const perChainMeta  = {};   // { count, avg } per chain
+  const cohortTotals  = {};   // cohort key -> net flow summed across chains
+  SM_COHORTS.forEach(c => { cohortTotals[c.key] = 0; });
+  CHAINS.forEach(c => { perChainSmart[c.id] = 0; perChainMeta[c.id] = { count: 0, avg: 0 }; });
+
+  await Promise.allSettled(
+    CHAINS.map(chain =>
+      apiPost(FLOW_INTEL_URL, { chain: chain.id, token_address: USDC[chain.id], timeframe: '1d' })
+        .then(json => {
+          const row = Array.isArray(json?.data) ? json.data[0] : (json?.data ?? json);
+          if (!row) return;
+          perChainSmart[chain.id] = Number(row.smart_trader_net_flow_usd ?? 0);
+          perChainMeta[chain.id]  = { count: row.smart_trader_wallet_count ?? 0, avg: Number(row.smart_trader_avg_flow_usd ?? 0) };
+          SM_COHORTS.forEach(c => { cohortTotals[c.key] += Number(row[`${c.key}_net_flow_usd`] ?? 0); });
+        })
+        .catch(e => errors.push(`${chain.label}: ${e.message}`))
+    )
+  );
+
+  document.getElementById('smLoading').style.display = 'none';
+
+  if (errors.length) {
+    const el = document.getElementById('smError');
+    el.style.display = 'block';
+    el.innerHTML = `<strong>Partial errors (${errors.length} chains):</strong>\n${esc(errors.join('\n'))}`;
+  }
+
+  const totalSmart = Object.values(perChainSmart).reduce((s, v) => s + v, 0);
+  document.getElementById('smSubtitle').textContent =
+    `Nansen Smart Money (Smart Trader) net USDC flow · 24h · total ${fmtUSD(totalSmart)} ${totalSmart >= 0 ? '(net accumulation)' : '(net distribution)'} · + green = inflow, − red = outflow`;
+
+  renderSmartMoneyChart(perChainSmart, perChainMeta);
+  renderCohortChart(cohortTotals);
+  document.getElementById('smContent').style.display = 'block';
+}
+
+function renderSmartMoneyChart(perChain, meta) {
+  const sorted = [...CHAINS].sort((a, b) => (perChain[b.id] ?? 0) - (perChain[a.id] ?? 0));
+  const labels = sorted.map(c => c.label);
+  const data   = sorted.map(c => perChain[c.id] ?? 0);
+  const bg = data.map(v => v >= 0 ? 'rgba(34,197,94,0.72)' : 'rgba(239,68,68,0.72)');
+  const bd = data.map(v => v >= 0 ? 'rgba(34,197,94,1)'    : 'rgba(239,68,68,1)');
+
+  if (smChart) smChart.destroy();
+  smChart = new Chart(document.getElementById('smChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Smart Money Net Flow', data, backgroundColor: bg, borderColor: bd, borderWidth: 1, borderRadius: 3 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1, titleColor: '#ccc', bodyColor: '#aaa',
+          callbacks: {
+            label: ctx => {
+              const c = sorted[ctx.dataIndex], m = meta[c.id] || {}, v = ctx.raw;
+              return [` Net: ${fmtUSD(v)} (${v >= 0 ? 'inflow' : 'outflow'})`, ` Smart wallets: ${m.count ?? 0}`];
+            },
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: '#1c1c1c' } },
+        y: { ticks: { color: '#555', font: { size: 10 }, callback: yTickCb }, grid: { color: '#1c1c1c' } },
+      },
+    },
+  });
+}
+
+function renderCohortChart(totals) {
+  const items  = SM_COHORTS.map(c => ({ label: c.label, v: totals[c.key] ?? 0 })).sort((a, b) => b.v - a.v);
+  const labels = items.map(i => i.label);
+  const data   = items.map(i => i.v);
+  const bg = data.map(v => v >= 0 ? 'rgba(34,197,94,0.72)' : 'rgba(239,68,68,0.72)');
+  const bd = data.map(v => v >= 0 ? 'rgba(34,197,94,1)'    : 'rgba(239,68,68,1)');
+
+  if (smCohortChart) smCohortChart.destroy();
+  smCohortChart = new Chart(document.getElementById('smCohortChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Net Flow', data, backgroundColor: bg, borderColor: bd, borderWidth: 1, borderRadius: 3 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1, titleColor: '#ccc', bodyColor: '#aaa',
+          callbacks: { label: ctx => ` Net: ${fmtUSD(ctx.raw)} (${ctx.raw >= 0 ? 'inflow' : 'outflow'})` },
+        },
+      },
+      scales: {
+        x: { ticks: { color: '#666', font: { size: 9 }, maxRotation: 0, autoSkip: false }, grid: { color: '#1c1c1c' } },
         y: { ticks: { color: '#555', font: { size: 10 }, callback: yTickCb }, grid: { color: '#1c1c1c' } },
       },
     },
@@ -764,11 +916,13 @@ function startTableLoop() {
 }
 
 document.getElementById('chartsRefresh').addEventListener('click', fetchChartData);
+document.getElementById('smRefresh').addEventListener('click', fetchSmartMoney);
 document.getElementById('depWithRefresh').addEventListener('click', () => renderDepWith(cachedTransfers));
 document.getElementById('tableRefresh').addEventListener('click', () => { resetCountdown(); fetchTable(); });
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 fetchChartData();
+fetchSmartMoney();
 startTableLoop();
 </script>
 </body>
